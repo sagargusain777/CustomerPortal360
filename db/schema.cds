@@ -31,3 +31,16 @@ entity ContactRoles : CodeList {
         key code  : String(10);
 }
 // Rows: CEO, CTO, CFO, IT, PROC (Procurement) etc.
+
+entity TicketPriorities : CodeList {
+     key code : String(10);
+}
+// Rows: CRIT=Critical, HIGH=High, MED=Medium, LOW=Low
+entity TicketStatuses : CodeList {
+     key code : String(10);
+}
+// Rows: OPEN=Open, INPR=In Progress, RES=Resolved, CLSD
+entity OpportunityStages : CodeList {
+  key code : String(20);
+}
+// Rows: PROSPECT, QUALIFY, PROPOSE, CLOSE_WON, CLOSE_LOST
