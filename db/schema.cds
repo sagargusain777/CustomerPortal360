@@ -125,24 +125,21 @@ entity Activities : cuid, managed {
 
 
 // ── Service Tickets ───────────────────────────────────────────────
-
 entity ServiceTickets : cuid, managed {
-     customer    : Association to Customers;
-     contact     : Association to Contacts;
-     subject     : String(200) @mandatory;
-     description : String(5000);
-     scheduledAt : DateTime;
-     isCompleted : Boolean default false;
-     channel     : String(50); // email / call / meeting / demo
-     sentiment   : String(20); // positive / neutral / negative
-     assignedTo  : String(100); // employee email
-     resolvedAt  : DateTime;
-     resolution  : String(5000);
+  customer     : Association to Customers;
+  contact      : Association to Contacts;
+  ticketNumber : String(20);          // TKT-000001 (auto-generated in handler)
+  title        : String(500) @mandatory;
+  description  : String(5000);
+  priority     : Association to TicketPriorities;  // CRIT/HIGH/MED/LOW
+  status       : Association to TicketStatuses;    // NEW/OPEN/RESOLVED/CLOSED
+  assignedTo   : String(100);
+  resolvedAt   : DateTime;
+  resolution   : String(5000);
 
-     // Ticket owns its comments
-     comments    : Composition of many TicketComments
-                        on comments.ticket = $self;
-
+  // Ticket owns its comments
+  comments     : Composition of many TicketComments
+                   on comments.ticket = $self;
 }
 
 entity TicketComments : cuid, managed {
@@ -150,4 +147,40 @@ entity TicketComments : cuid, managed {
   text            : String(5000) @mandatory;
   isInternal      : Boolean default false;  // internal note vs customer reply
   author          : String(100);
+}
+// ── Opportunities ─────────────────────────────────────────────────
+entity Opportunities : cuid, managed {
+  customer          : Association to Customers;
+  contact           : Association to Contacts;
+  opportunityNumber : String(20);    // OPP-000001
+  title             : String(500) @mandatory;
+  stage             : Association to OpportunityStages;
+  expectedRevenue   : Money;
+  probability       : Decimal(5,2);  // 0–100 %
+  expectedCloseDate : Date;
+  lostReason        : String(500);
+  assignedTo        : String(100);
+}
+
+// ── Sales Orders ──────────────────────────────────────────────────
+entity SalesOrders : cuid, managed {
+  customer      : Association to Customers;
+  orderNumber   : String(30) @mandatory;
+  status        : String(30);         // Processing / Delivered / Cancelled
+  orderDate     : Date;
+  netAmount     : Money;
+  currency      : String(3) default 'USD';
+  paymentStatus : String(30);         // Paid / Pending / Overdue
+
+  // Order owns its line items
+  items         : Composition of many SalesOrderItems
+                    on items.order = $self;
+}
+
+entity SalesOrderItems : cuid {
+  order         : Association to SalesOrders;
+  productName   : String(200);
+  quantity      : Decimal(10,2);
+  unitPrice     : Money;
+  totalPrice    : Money;
 }
