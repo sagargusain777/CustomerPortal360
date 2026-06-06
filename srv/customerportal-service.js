@@ -1,9 +1,6 @@
 'use strict';
 
 const cds = require('@sap/cds');
-const { SELECT, INSERT, UPDATE } = require('@sap/cds/lib/ql/cds-ql');
-
-
 
 module.exports = class CustomerPortalService extends cds.ApplicationService {
 
@@ -68,16 +65,15 @@ module.exports = class CustomerPortalService extends cds.ApplicationService {
 
         // Befor create and Update : Contact Full Name 
         this.before(['CREATE', 'UPDATE'], Contacts, async (req) => {
-            const { firstName, lastName } = req.data;
-            if (!firstName || firstName === undefined) {
-                firstName = ' ';
-            }
+            let firstName = req.data.firstName;
+            let lastName = req.data.lastName;
 
-            if (!lastName || lastName === undefined) {
-                lastName = ' ';
-            }
+            if (firstName && lastName) {
+                if (!firstName) firstName = ' ';
+                if (!lastName) lastName = ' ';
+                req.data.fullName = (firstName + ' ' + lastName).trim();
 
-            req.data.fullName = `${firstName} ' ' ${lastName}`.trim();
+            }
 
         });
 
@@ -90,7 +86,7 @@ module.exports = class CustomerPortalService extends cds.ApplicationService {
 
             await INSERT.into(TicketComments).entries({
                 ticket_ID: ID,
-                comment: `Ticket escalated. Reason: ${reason}`,
+                text: `Ticket escalated. Reason: ${reason}`,
                 isInternal: true,
                 author: req.user?.id || 'system'
             })
@@ -116,24 +112,24 @@ module.exports = class CustomerPortalService extends cds.ApplicationService {
 
         });
 
-         this.on('close', ServiceTickets, async (req) => {
+        this.on('close', ServiceTickets, async (req) => {
             const { ID } = req.params[0];
 
             await UPDATE(ServiceTickets)
-                .set  ({ status_code: 'CLOSED' })
+                .set({ status_code: 'CLOSED' })
                 .where({ ID });
 
             return SELECT.one(ServiceTickets).where({ ID });
         });
- // ── ACTION: markWon ────────────────────────────────────────
+        // ── ACTION: markWon ────────────────────────────────────────
         this.on('markWon', Opportunities, async (req) => {
-            const { ID }            = req.params[0];
+            const { ID } = req.params[0];
             const { actualRevenue } = req.data;
 
             await UPDATE(Opportunities)
                 .set({
-                    stage_code:        'CLOSE_WON',
-                    expectedRevenue:   actualRevenue,
+                    stage_code: 'CLOSE_WON',
+                    expectedRevenue: actualRevenue,
                     expectedCloseDate: new Date().toISOString().split('T')[0]
                 })
                 .where({ ID });
@@ -143,13 +139,13 @@ module.exports = class CustomerPortalService extends cds.ApplicationService {
 
         // ── ACTION: markLost ───────────────────────────────────────
         this.on('markLost', Opportunities, async (req) => {
-            const { ID }     = req.params[0];
+            const { ID } = req.params[0];
             const { reason } = req.data;
 
             await UPDATE(Opportunities)
                 .set({
-                    stage_code:        'CLOSE_LOST',
-                    lostReason:        reason,
+                    stage_code: 'CLOSE_LOST',
+                    lostReason: reason,
                     expectedCloseDate: new Date().toISOString().split('T')[0]
                 })
                 .where({ ID });
@@ -157,40 +153,60 @@ module.exports = class CustomerPortalService extends cds.ApplicationService {
             return SELECT.one(Opportunities).where({ ID });
         });
 
-        this.on('activate',Customers ,async (req) => {
+        this.on('activate', Customers, async (req) => {
             const { ID } = req.params[0];
 
             await UPDATE(Customers).set({ isActive: true }).where({ ID });
-            
+
             return SELECT.one(Customers).where({ ID });
         });
 
-        this.on('deactivate',Customers ,async (req)=> {
-            const {ID} = req.params[0];
+        this.on('deactivate', Customers, async (req) => {
+            const { ID } = req.params[0];
 
-            await UPDATE(Customers).set({ isActive: false}).where({ID});
+            await UPDATE(Customers).set({ isActive: false }).where({ ID });
 
-            return SELECT.one(Customers).where({ID});
-            
+            return SELECT.one(Customers).where({ ID });
+
         });
 
         // Dashboard Function Status
-        this.on('getDashboardStatus',async (req) =>{
+        this.on('getDashboardStat', async (req) => {
 
             const totalResults = await SELECT.one`count(*) as total`.from(Customers);
             const activeResults = await SELECT.one`count(*) as active`.from(Customers).where({ isActive: true });
             const inactiveResults = await SELECT.one`count(*) as inactive`.from(Customers).where({ isActive: false });
-            const ticketResults = await SELECT.one`count(*) as cnt`.from(ServiceTickets).where({ status_code :{'!=': 'CLOSED'} });
-            const opportunityResults = await SELECT.one`count(*)as cnt`.from(Opportunities).where({stage_code : {'!=':'CLOSE_WON'}})
+            const ticketResults = await SELECT.one`count(*) as cnt`.from(ServiceTickets).where({ status_code: { '!=': 'CLOSED' } });
+            const opportunityResults = await SELECT.one`count(*)as cnt`.from(Opportunities).where({ stage_code: { '!=': 'CLOSE_WON' } })
+
+            return {
+                totalCustomers: totalResults.total || 0,
+                activeCustomers: activeResults.active || 0,
+                inactiveCustomers: inactiveResults.inactive || 0,
+                openTickets: ticketResults.cnt || 0,
+                openOpportunities: opportunityResults.cnt || 0
+            };
         });
 
-        return {
-                totalCustomers : totalResults.total || 0,
-                activeCustomers : activeResults.active || 0,
-                inactiveCustomers : inactiveResults.inactive || 0,
-                openTickets : ticketResults.cnt || 0,
-                openOpportunities : opportunityResults.cnt || 0
-        };
+
+
+        this.on('searchCustomers', async (req) => {
+            const { query, segment, industry } = req.data;
+
+            let customers = SELECT.from(Customers);
+
+            if (query) {
+                customers = customers.where(`companyName like '%${query}%'`);
+            }
+            if (segment) {
+                customers = customers.where({ segment_code: segment });
+            }
+            if (industry) {
+                customers = customers.where({ industry_code: industry });
+            }
+
+            return customers.limit(50);
+        })
 
 
 
