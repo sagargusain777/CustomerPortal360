@@ -99,4 +99,19 @@ service CustomerPortalService {
     action deactivate() returns Customers;
   }
 
+  // Unbound functions 
+  function getDashboardStat() returns{
+    totalCustomers    : Integer;
+    activeCustomers   : Integer;
+    inactiveCustomers : Integer;
+    openTickets       : Integer;
+    openOpportunities : Integer;
+  } ;
+
+  function searchCustomers(
+    query    : String(200),
+    segment  : String(10),
+    industry : String(10)
+  ) returns array of Customers;
+
 }
