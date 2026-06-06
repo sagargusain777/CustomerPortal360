@@ -1,7 +1,7 @@
 'use strict';
 
 const cds = require('@sap/cds');
-const { SELECT, INSERT } = require('@sap/cds/lib/ql/cds-ql');
+const { SELECT, INSERT, UPDATE } = require('@sap/cds/lib/ql/cds-ql');
 
 
 
@@ -156,6 +156,14 @@ module.exports = class CustomerPortalService extends cds.ApplicationService {
 
             return SELECT.one(Opportunities).where({ ID });
         });
+
+        this.on('activate',Customers ,async (req) => {
+            const { ID } = req.params[0];
+
+            await UPDATE(Customers).set({ isActive: true }).where({ ID });
+            
+            return SELECT.one(Customers).where({ ID });
+        })
 
         // Always call super.init() at the end
         await super.init()
