@@ -16,7 +16,7 @@ module.exports = class CustomerPortalService extends cds.ApplicationService {
             SalesOrders } = this.entities;
 
 
-
+        // Generate unique customer number before creating a new customer
         this.before('CREATE', Customers, async (req) => {
 
             const resultNumber = await SELECT.one`count(*) as cnt`.from(Customers);
@@ -33,7 +33,7 @@ module.exports = class CustomerPortalService extends cds.ApplicationService {
             req.data.isActive = true;
         }
         )
-
+        // Generate unique ticket number before creating a new service ticket
         this.before('CREATE', ServiceTickets, async (req) => {
             const resultNumber = await SELECT.one`count(*)as cnt`.from(ServiceTickets);
             let currentCount = 0;
@@ -49,10 +49,10 @@ module.exports = class CustomerPortalService extends cds.ApplicationService {
         })
 
 
+        // Generate unique opportunity number before creating a new opportunity
+        this.before('CREATE', Opportunities, async (req) => {
 
-        this.before('CREATE',Opportunities,async(req)=>{
-
-            const resultNumber = await SELECT.one `count(*) as cnt`.from(Opportunities);
+            const resultNumber = await SELECT.one`count(*) as cnt`.from(Opportunities);
             let currentCount = 0;
             if (resultNumber && resultNumber.cnt) {
                 currentCount = parseInt(resultNumber.cnt);
@@ -62,14 +62,24 @@ module.exports = class CustomerPortalService extends cds.ApplicationService {
             let paddedOpportunityNumber = nextOpportunityNumber.toString().padStart(6, '0');
             req.data.opportunityNumber = `OPP-${paddedOpportunityNumber}`;
 
-            if( !req.data.stage_code) req.data.stage_code = 'PROSPECT';
+            if (!req.data.stage_code) req.data.stage_code = 'PROSPECT';
 
+        } )
+
+     // Befor create and Update : Contact Full Name 
+     this.before(['CREATE', 'UPDATE'], Contacts , async (req) =>  {
+        const { firstName, lastName} = req.data;
+        if(!firstName || firstName === undefined){
+            firstName = ' ';
         }
 
+        if(!lastName || lastName === undefined){
+            lastName = ' ';
+        }
+
+        req.data.fullName = `${firstName} ' ' ${lastName}`.trim();
         
-    )
-
-
+     })
 
         // Always call super.init() at the end
         await super.init()
