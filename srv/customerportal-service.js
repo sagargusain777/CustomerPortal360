@@ -32,7 +32,7 @@ module.exports = class CustomerPortalService extends cds.ApplicationService {
             req.data.customerNumber = `CUST-${paddedCustomerNumber}`;
             req.data.isActive = true;
         }
-        )
+        );
         // Generate unique ticket number before creating a new service ticket
         this.before('CREATE', ServiceTickets, async (req) => {
             const resultNumber = await SELECT.one`count(*)as cnt`.from(ServiceTickets);
@@ -46,7 +46,7 @@ module.exports = class CustomerPortalService extends cds.ApplicationService {
             req.data.ticketNumber = `TKT-${paddedTicketNumber}`;
             if (!req.data.status_code) req.data.status_code = 'NEW';
             if (!req.data.priority_code) req.data.priority_code = 'MED';
-        })
+        });
 
 
         // Generate unique opportunity number before creating a new opportunity
@@ -64,7 +64,7 @@ module.exports = class CustomerPortalService extends cds.ApplicationService {
 
             if (!req.data.stage_code) req.data.stage_code = 'PROSPECT';
 
-        })
+        });
 
         // Befor create and Update : Contact Full Name 
         this.before(['CREATE', 'UPDATE'], Contacts, async (req) => {
@@ -79,7 +79,7 @@ module.exports = class CustomerPortalService extends cds.ApplicationService {
 
             req.data.fullName = `${firstName} ' ' ${lastName}`.trim();
 
-        })
+        });
 
         // Action Escalate
         this.on('escalate', ServiceTickets, async (req) => {
@@ -96,7 +96,7 @@ module.exports = class CustomerPortalService extends cds.ApplicationService {
             })
 
             return SELECT.one(ServiceTickets).where({ ID });
-        })
+        });
         // Action Resolve
         this.on('resolve', ServiceTickets, async (req) => {
 
@@ -114,7 +114,7 @@ module.exports = class CustomerPortalService extends cds.ApplicationService {
 
             return SELECT.one(ServiceTickets).where({ ID });
 
-        })
+        });
 
          this.on('close', ServiceTickets, async (req) => {
             const { ID } = req.params[0];
@@ -163,7 +163,7 @@ module.exports = class CustomerPortalService extends cds.ApplicationService {
             await UPDATE(Customers).set({ isActive: true }).where({ ID });
             
             return SELECT.one(Customers).where({ ID });
-        })
+        });
 
         this.on('deactivate',Customers ,async (req)=> {
             const {ID} = req.params[0];
@@ -172,7 +172,27 @@ module.exports = class CustomerPortalService extends cds.ApplicationService {
 
             return SELECT.one(Customers).where({ID});
             
-        })
+        });
+
+        // Dashboard Function Status
+        this.on('getDashboardStatus',async (req) =>{
+
+            const totalResults = await SELECT.one`count(*) as total`.from(Customers);
+            const activeResults = await SELECT.one`count(*) as active`.from(Customers).where({ isActive: true });
+            const inactiveResults = await SELECT.one`count(*) as inactive`.from(Customers).where({ isActive: false });
+            const ticketResults = await SELECT.one`count(*) as cnt`.from(ServiceTickets).where({ status_code :{'!=': 'CLOSED'} });
+            const opportunityResults = await SELECT.one`count(*)as cnt`.from(Opportunities).where({stage_code : {'!=':'CLOSE_WON'}})
+        });
+
+        return {
+                totalCustomers : totalResults.total || 0,
+                activeCustomers : activeResults.active || 0,
+                inactiveCustomers : inactiveResults.inactive || 0,
+                openTickets : ticketResults.cnt || 0,
+                openOpportunities : opportunityResults.cnt || 0
+        };
+
+
 
         // Always call super.init() at the end
         await super.init()
