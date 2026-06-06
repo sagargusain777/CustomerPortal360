@@ -1,7 +1,7 @@
 'use strict';
 
 const cds = require('@sap/cds');
-const { SELECT } = require('@sap/cds/lib/ql/cds-ql');
+const { SELECT, INSERT } = require('@sap/cds/lib/ql/cds-ql');
 
 
 
@@ -78,7 +78,24 @@ module.exports = class CustomerPortalService extends cds.ApplicationService {
         }
 
         req.data.fullName = `${firstName} ' ' ${lastName}`.trim();
-        
+
+     })
+
+     // Action Escalate
+     this.on('escalate',ServiceTickets, async (req) => {
+        const {ID} = req.params[0];
+        const {reason} = req.data;
+
+        await UPDATE(ServiceTickets).set({status_code: 'ESCALATED'}).where({ID: ID});
+
+        await INSERT.into(TicketComments).entries({
+            ticket_ID : ID,
+            comment: `Ticket escalated. Reason: ${reason}`,
+            isInternal: true,
+            author: req.user?.id || 'system'
+        })
+
+          return SELECT.one(ServiceTickets).where({ ID });
      })
 
         // Always call super.init() at the end
