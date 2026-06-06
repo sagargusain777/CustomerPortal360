@@ -125,6 +125,37 @@ module.exports = class CustomerPortalService extends cds.ApplicationService {
 
             return SELECT.one(ServiceTickets).where({ ID });
         });
+ // ── ACTION: markWon ────────────────────────────────────────
+        this.on('markWon', Opportunities, async (req) => {
+            const { ID }            = req.params[0];
+            const { actualRevenue } = req.data;
+
+            await UPDATE(Opportunities)
+                .set({
+                    stage_code:        'CLOSE_WON',
+                    expectedRevenue:   actualRevenue,
+                    expectedCloseDate: new Date().toISOString().split('T')[0]
+                })
+                .where({ ID });
+
+            return SELECT.one(Opportunities).where({ ID });
+        });
+
+        // ── ACTION: markLost ───────────────────────────────────────
+        this.on('markLost', Opportunities, async (req) => {
+            const { ID }     = req.params[0];
+            const { reason } = req.data;
+
+            await UPDATE(Opportunities)
+                .set({
+                    stage_code:        'CLOSE_LOST',
+                    lostReason:        reason,
+                    expectedCloseDate: new Date().toISOString().split('T')[0]
+                })
+                .where({ ID });
+
+            return SELECT.one(Opportunities).where({ ID });
+        });
 
         // Always call super.init() at the end
         await super.init()
