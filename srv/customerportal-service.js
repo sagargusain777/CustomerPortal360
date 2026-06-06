@@ -116,6 +116,16 @@ module.exports = class CustomerPortalService extends cds.ApplicationService {
 
         })
 
+         this.on('close', ServiceTickets, async (req) => {
+            const { ID } = req.params[0];
+
+            await UPDATE(ServiceTickets)
+                .set  ({ status_code: 'CLOSED' })
+                .where({ ID });
+
+            return SELECT.one(ServiceTickets).where({ ID });
+        });
+
         // Always call super.init() at the end
         await super.init()
     }
