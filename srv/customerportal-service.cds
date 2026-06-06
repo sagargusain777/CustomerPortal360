@@ -63,5 +63,12 @@ service CustomerPortalService{
   @readonly entity TicketPriorities  as projection on db.TicketPriorities;
   @readonly entity TicketStatuses    as projection on db.TicketStatuses;
   @readonly entity OpportunityStages as projection on db.OpportunityStages;
+
+  //Ticket Actions
+  extend projection ServiceTickets with actions{
+    action escalate(reason : String(500));
+    action resolve(resolution : String(500));
+    action close();
+  }
         
 }
