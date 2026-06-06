@@ -165,6 +165,15 @@ module.exports = class CustomerPortalService extends cds.ApplicationService {
             return SELECT.one(Customers).where({ ID });
         })
 
+        this.on('deactivate',Customers ,async (req)=> {
+            const {ID} = req.params[0];
+
+            await UPDATE(Customers).set({ isActive: false}).where({ID});
+
+            return SELECT.one(Customers).where({ID});
+            
+        })
+
         // Always call super.init() at the end
         await super.init()
     }
