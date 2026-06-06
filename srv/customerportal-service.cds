@@ -66,9 +66,15 @@ service CustomerPortalService{
 
   //Ticket Actions
   extend projection ServiceTickets with actions{
-    action escalate(reason : String(500));
-    action resolve(resolution : String(500));
-    action close();
+    action escalate(reason : String(500)) returns ServiceTickets;
+    action resolve(resolution : String(500)) returns ServiceTickets;
+    action close() returns ServiceTickets;
   }
+ // Opportunity Actions
+  extend projection Opportunities with actions{
+
+    action markWon(actualRevenue : Decimal(15,2)) returns Opportunities;
+    action markLost(reason : String(500)) returns Opportunities;
+  } 
         
 }
