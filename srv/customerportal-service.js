@@ -94,7 +94,7 @@ module.exports = class CustomerPortalService extends cds.ApplicationService {
             return SELECT.one(ServiceTickets).where({ ID });
         });
         // Action Resolve
-        this.on('resolve', ServiceTickets, async (req) => {
+        this.on('resolveTicket', ServiceTickets, async (req) => {
 
             const { ID } = req.params[0];
             const { resolution } = req.data;
