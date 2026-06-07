@@ -48,6 +48,7 @@ service CustomerPortalService {
     };
 
   // ── Customers LAST (uses all entities above) ─────────────────
+  @odata.draft.enabled
   entity Customers         as
     projection on db.Customers {
       *,
@@ -82,7 +83,7 @@ service CustomerPortalService {
   //Ticket Actions
   extend projection ServiceTickets with actions {
     action escalate(reason: String(500))    returns ServiceTickets;
-    action resolve(resolution: String(500)) returns ServiceTickets;
+    action resolveTicket(resolution: String(500)) returns ServiceTickets;
     action close()                          returns ServiceTickets;
   }
 
